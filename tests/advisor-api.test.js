@@ -349,15 +349,15 @@ test('API：错误路径（BAD_SESSION、同源 403、非法 patch）', async (t
   assert.equal(bad.status, 400)
   assert.equal(bad.json.code, 'BAD_SESSION')
 
-  // 写操作缺 Origin（同源防护）
+  // 写操作缺 Origin + 回环对端 → **放行**（PR #91：DSH 桌面端宿主转发 Web UI
+  // 请求时不带 Origin，旧实现一律 403 导致桌面版 advisor 写接口全不可用）。
+  // 非回环对端仍拒绝——该分支由 tests/origin-guard.test.js 直接覆盖。
   const noOrigin = await fetch(base + '/memory-evolve/api/advisor/toggle', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ sessionId: 'session-1', enabled: true }),
   })
-  const noOriginJson = await noOrigin.json()
-  assert.equal(noOrigin.status, 403)
-  assert.equal(noOriginJson.code, 'FORBIDDEN')
+  assert.equal(noOrigin.status, 200, 'missing Origin from a loopback peer must be allowed (desktop host forwarding)')
 
   // 跨站 Origin
   const cross = await fetch(base + '/memory-evolve/api/advisor/toggle', {

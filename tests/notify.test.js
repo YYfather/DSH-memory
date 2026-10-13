@@ -252,7 +252,7 @@ test('buildChannelContent: email-style template slices intro to 60 and body to 1
   // 简介=前 60 字；内容=前 120 字放最后；发送人/时间字段存在
   assert.ok(c.includes(`📝 简介：${'甲'.repeat(60)}`))
   assert.ok(c.includes(`📄 内容\n${'甲'.repeat(80)}|${'乙'.repeat(39)}`))
-  assert.ok(c.includes('👤 发送人：DSH AI 助手（dsh-memory-evolve）'))
+  assert.ok(c.includes('👤 发送人：DSH AI 助手（dsh-memory）'))
 })
 
 test('buildNotify: command + channels coexist', async () => {

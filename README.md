@@ -1,4 +1,4 @@
-# dsh-memory-evolve 使用场景指南
+# DSH-memory 使用场景指南
 
 > **一句话**：让 DSH 里的 AI 拥有跨会话的长期记忆、帮你管理待办与技能、还能拉起一群 AI 会话和外部 AI 代理协同干活——**越用越懂你，换会话不丢上下文**。
 >
@@ -8,13 +8,30 @@
 
 ---
 
+## 来源与许可（Attribution）
+
+**DSH-memory 是 [csyangwen/dsh-memory-evolve](https://github.com/csyangwen/dsh-memory-evolve) 的衍生分支（fork）**，遵循上游的 MIT 许可（原始版权声明保留在 [LICENSE](LICENSE)：`Copyright (c) 2026 dsh-external`）。
+
+| | |
+|---|---|
+| **上游项目** | [csyangwen/dsh-memory-evolve](https://github.com/csyangwen/dsh-memory-evolve)（作者 [@csyangwen](https://github.com/csyangwen)） |
+| **本分支** | [YYfather/DSH-memory](https://github.com/YYfather/DSH-memory)（npm：`@yyfather/dsh-memory`） |
+| **本分支做了什么** | **只做 DSH 0.2.0-rc.2 的兼容性修复，功能一个没删**。逐条说明见 [更新日志 2026-10-13](docs/CHANGELOG.md)。 |
+| **上游致谢** | 分层记忆模型、五轨设计、git 记忆同步与合并算法、自我进化/技能体系、COI 调度等全部原创设计均来自上游；本分支仅修复宿主升级带来的破坏性变更。 |
+
+主要修复（细节与证据见更新日志）：客户端 `<style>` 归属导致整页掉样式（issue #89）、书签轮尾星标不注入（issue #86）、`skill_manage patch` 守卫恒 false（issue #90）、会话 `.events` 移除导致四处功能静默失效、桌面版同源守卫拒绝宿主转发 + 远端检测超时（PR #91）、技能面板只剩 1 个技能（PR #65）、Windows 下构建产物不可复现。
+
+> 本分支与上游**数据完全兼容**：记忆目录仍是 `<DSH_HOME>/memories`，配置键、工具名、HTTP 路由前缀、localStorage 键一律未改——从上游切过来（或切回去）不会丢记忆、不需要重新配置。
+
+---
+
 ## 快速开始（安装）
 
 插件包内自带 `cordis.patch.yml`（`dsh.bundle.patch` 声明），`dsh plugin add` 安装后 **host 端自动注册，无需任何手动配置**。以 web profile 为例，两步装好：
 
 ```sh
-# 1. 安装到 profile（本地目录用 link:，也可用 git/registry 包地址）
-dsh plugin --profile web add github:csyangwen/dsh-memory-evolve
+# 1. 安装到 profile（npm 包名；也可用本地目录 link: 或 git 地址）
+dsh plugin --profile web add @yyfather/dsh-memory
 
 # 2. 重启 dsh web 即生效
 ```
@@ -24,7 +41,7 @@ dsh plugin --profile web add github:csyangwen/dsh-memory-evolve
 **修改默认配置**（如开启回合内记忆审查）：在 profile 的 `cordis.patch.yml` 用 id 覆盖（顶层写法，非 insert）：
 
 ```yaml
-- id: dsh-memory-evolve
+- id: dsh-memory
   config:
     reviewEnabled: true      # 开启回合内记忆审查（默认关）
     reviewInterval: 10       # 每 10 个用户回合审查一次
@@ -33,13 +50,13 @@ dsh plugin --profile web add github:csyangwen/dsh-memory-evolve
 **插件异常导致 DSH 无法启动时，临时禁用**（等修复后取消）：同样在 profile 的 `cordis.patch.yml` 加一行即可，无需卸载：
 
 ```yaml
-- id: dsh-memory-evolve
+- id: dsh-memory
   disabled: true
 ```
 
 **从旧版本升级**：若你此前按旧文档手动 insert 过本插件，请删除 profile patch 里的 insert 行（否则与 bundle 自动注册重复）。
 
-卸载：`dsh plugin --profile web remove dsh-memory-evolve`，一切效果随插件卸载自动清理。
+卸载：`dsh plugin --profile web remove @yyfather/dsh-memory`，一切效果随插件卸载自动清理。
 
 ---
 

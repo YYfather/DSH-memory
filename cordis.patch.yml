@@ -1,10 +1,15 @@
-# dsh-memory-evolve bundle patch: inserts the host row into the profile's
-# plugin roster. The browser half rides the package's `dsh.client` manifest
-# (the client registry serves lib/client.js), and this row materializes the
-# memory / skills / todos / CLI-dispatch host plugin on boot.
-# Install with `dsh plugin --profile <name> add <path-or-git-url>`; the bundle
-# patch is applied automatically, so do NOT insert this row again in the
-# profile patch (duplicate ids crash the loader).
+# DSH-memory bundle patch: inserts the host row into the profile's plugin
+# roster. The browser half rides the package's `dsh.client` manifest (the client
+# registry serves lib/client.js), and this row materializes the memory / skills /
+# todos / CLI-dispatch / sync host plugin on boot.
+#
+# ⚠️ The row `name` MUST equal package.json's `name`: the client module system
+# keys the bundle registration id (and the <style> ownership ledger) by the
+# package name, so a mismatch fails with "loaded without registering <id>".
+#
+# Install with `dsh plugin --profile <name> add @yyfather/dsh-memory`; the bundle
+# patch is applied automatically, so do NOT insert this row again in the profile
+# patch (duplicate ids crash the loader).
 - insert:
-    - id: dsh-memory-evolve
-      name: 'dsh-memory-evolve'
+    - id: dsh-memory
+      name: '@yyfather/dsh-memory'

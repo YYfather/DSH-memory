@@ -728,15 +728,21 @@ test('[P1-5] API 契约：POST update 同源校验（Content-Type/Origin）', as
   }
 })
 
-test('[P1-5] API 契约：POST 缺 Origin 被拒（更新必须由 Web UI 发起）', async () => {
+test('[P1-5] API 契约：POST 缺 Origin → 回环对端放行到业务层（桌面宿主转发，PR #91）', async () => {
   const { consumer } = setupRepo()
   const { request, close } = await bootUpdateApi(consumer)
   try {
-    // request 封装不设 Origin header；Node fetch 同源 POST 默认不带 Origin
-    // （与浏览器不同）→ sameOriginGuard 必须拒绝（CodeX 复审 P1-5）。
-    const r = await request('POST', '/memory-evolve/api/update', { expectedTag: 'v9.9.9' })
+    // Node fetch 同源 POST 默认不带 Origin（与浏览器不同）；DSH **桌面端**
+    // 宿主转发 Web UI 请求时同样不带 Origin——旧实现把两者一并拒绝
+    // （桌面端「更新」按钮恒 400，PR #91）。
+    // 新契约：缺 Origin + 回环对端 → 放行，请求进入业务层；此处 expectedTag
+    // 非法，业务层立刻返回 bad-request（不是 guard 的「缺少 Origin」文案），
+    // 且不触发任何 git 操作。
+    const r = await request('POST', '/memory-evolve/api/update', { expectedTag: '' })
     assert.equal(r.status, 400)
     assert.equal(r.data.code, 'bad-request')
+    assert.doesNotMatch(String(r.data.error), /缺少 Origin/)
+    assert.match(String(r.data.error), /expectedTag/)
   } finally {
     await close()
   }

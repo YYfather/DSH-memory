@@ -68,6 +68,28 @@ function resolveEsbuild(checkout) {
 const require = createRequire(resolveEsbuild(CHECKOUT))
 const esbuild = require('esbuild')
 
+/**
+ * CSS 行尾归一化插件（2026-10-13 新增，Windows 可复现构建）。
+ *
+ * 为什么需要：text loader 把 CSS 按**原文**内联进字符串，于是检出行尾会
+ * 直接决定产物内容。上游产物是在 LF 检出下构建的（字符串里是 `\n`），而
+ * Windows 上 `core.autocrlf=true` 会把工作区 CSS 变成 CRLF —— 同样的源码
+ * 重建出 2194 行 diff（内容等价，只是字符串里多了 `\r`），与仓库历史产物
+ * 不再可比，也让「构建产物是否滞后于源码」这类审查彻底失效。
+ *
+ * 这里在读入阶段就把 `\r\n` 折成 `\n`，使产物与检出平台无关：无论 LF 还是
+ * CRLF 工作区，重建结果都与仓库里的 lib/client.js 逐字节一致。
+ */
+const cssLfNormalize = {
+  name: 'css-lf-normalize',
+  setup(build) {
+    build.onLoad({ filter: /\.css$/ }, async (args) => ({
+      contents: readFileSync(args.path, 'utf8').replace(/\r\n/g, '\n'),
+      loader: 'text',
+    }))
+  },
+}
+
 const banner = [
   `window.__ModuleLoader__.load({ id: ${JSON.stringify(PLUGIN_ID)}, factory: (require) => {`,
   'var module = { exports: {} }; var exports = module.exports;',
@@ -96,6 +118,7 @@ await esbuild.build({
     'import.meta.env': '{"MODE":"production"}',
   },
   loader: { '.css': 'text' },
+  plugins: [cssLfNormalize],
   banner: { js: banner },
   footer: { js: footer },
 })

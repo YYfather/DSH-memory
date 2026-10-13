@@ -31,7 +31,7 @@ import { PLUGIN_SOURCE_KIND } from '../lib/coi/source.js'
 const LIB_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib')
 
 /** 插件包名（package.json 的 name），kind 必须由它拼出。 */
-const PACKAGE_NAME = 'dsh-memory-evolve'
+const PACKAGE_NAME = '@yyfather/dsh-memory'
 
 /** `lib/` 下全部 .js 源文件（相对路径 + 内容）。 */
 function libSources() {

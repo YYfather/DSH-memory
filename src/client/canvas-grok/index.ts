@@ -9,6 +9,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 import { CanvasView } from './CanvasView.tsx'
 import { STYLE_ATTR } from './constants.ts'
+import { injectOwnedStyle } from '../style-tag.ts'
 import styles from './styles.css'
 
 /**
@@ -48,14 +49,9 @@ export interface RegisterCanvasTabOpts {
 
 /** 注入 cg- 前缀样式。已存在则跳过，避免热更重复挂。 */
 function injectCanvasStyles(): () => void {
-  if (typeof document === 'undefined') return () => {}
-  const existing = document.querySelector(`style[${STYLE_ATTR}]`)
-  if (existing !== null) return () => {}
-  const tag = document.createElement('style')
-  tag.setAttribute(STYLE_ATTR, '1')
-  tag.textContent = styles
-  document.head.appendChild(tag)
-  return () => { tag.remove() }
+  // 归属（data-plugin）由共享入口统一落定：晚一步就可能被别的插件物化时认领走，
+  // 进而被对方的重载连带删除（issue #89）。STYLE_ATTR 仍作本段样式的专用标记。
+  return injectOwnedStyle(STYLE_ATTR, styles)
 }
 
 /**

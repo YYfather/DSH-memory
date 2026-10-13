@@ -4,6 +4,38 @@
 
 > [English](CHANGELOG.en.md)
 
+## 2026-10-13
+
+> 本轮为 **DSH 0.2.0-rc.2 兼容性修复**（功能一个不删）。rc.1 的适配只覆盖了
+> settings 服务与客户端的图标改名 / 切换会话入口；rc.2 上「会话事件读取」
+> 「轮尾 DOM 结构」「客户端样式归属账本」各自又会造成**静默失效**（不报错、
+> 只是功能不工作）甚至**整页掉样式**。以下每一条结论都在 rc.2 的 `app.asar`
+> 源码上核实过。
+
+### 修复
+
+- **客户端运行时注入的 `<style>` 没有归属，会让整页掉样式（issue #89，阻塞级）**：`dsh-client-modules` 用 `<style>` 上的 `data-plugin` 维护样式归属账本——物化任一插件 bundle 后 `claimStyles(id)` 会**认领页面上所有没有归属的 `<style>`**，该插件重载/图重组回收时再按归属删除。本插件的 11 处样式注入**都发生在 `apply()` 阶段**（晚于自身 bundle 物化），于是双向受伤：① 自己的样式成了孤儿标签，被随后物化的任意插件认领走——对方一重载就把我们的样式删掉，而注入守卫（`style[data-…]` 已存在）认为"注入过了"**永不恢复**（面板裸奔）；② 反过来，本插件物化时会把页面上**所有**孤儿标签认领到自己名下——本插件一重载就删掉**别人**的样式，症状正是用户可见的"DOM 完好但整页没有任何 CSS"。官方客户端插件之所以安全，是因为它们在**注入时**就写好了归属。新增 `src/client/style-tag.ts` 作为**唯一入口** `injectOwnedStyle(marker, css)`：创建标签时即写 `data-plugin: dsh-memory-evolve`（= 包名 = Loader 条目 id，也就是账本用的 ownerId），幂等守卫分支**顺手抢回**历史遗留孤儿标签的归属（升级后存量页面无需二次刷新）。11 处注入（`src/client/index.ts` 10 处 + `canvas-grok/index.ts` 1 处）全部收敛到该入口。
+- **会话书签的轮尾 ☆ 星标一个都注入不出来（issue #86）**：DSH 0.2.x 把消息操作区（含 Branch 按钮）从 `assistant-step` 消息节点**内部**搬到了独立的轮尾节点 `div[data-turn-tail]`（ui-chat 的 `TurnTailNodeView`，`data-turn-tail` = 轮次号，另带 `data-actions-reveal`）。而注入器仍以"消息节点**内**有 Branch 按钮"为轮尾判据——该判据在 0.2.x 上**恒为假**，于是星标永不注入（书签 Tab 与数据层都正常，只在"打不了星"时暴露）。现改为**两代宿主双路径**：有 `[data-turn-tail]` 时以轮尾节点为准（轮次号直接读该属性，锚点按文档顺序解析），没有时退回原"节点内有 Branch 按钮"路径。锚点解析刻意**不取"轮尾之前最近的那个锚点"**：一轮的最后一条 surface 节点可能是**独立的**工具调用/结果节点（锚点形如 `call:<id>`，见 ui-tool 的 DOM 约定），直接取会拿到 call 锚点；`resolveTurnAnchor` 优先取**同轮**的 `assistant-step`（用 `data-turn-tail` 的轮次号与锚点 id 的 `turn:step` 互相印证），仅在同轮找不到时才退回任意锚点兜底。中间轮仍按原设计只接管官方禁用按钮（任意轮 fork）而不打星。
+- **`skill_manage action=patch` 永久不可用（issue #90）**：读证据守卫读 `agent.session.events`，而 `.events` 自 0.1.2-alpha.4 起已移除 → `Array.isArray(undefined)` 恒 false → 无论先读过多少次，`patch` 一律回"更新前必须先读取它"。同一处还有第二个缺陷：事件里的 `arguments` 在内存态可能**已经是对象**，`JSON.parse(对象)` 抛错又被空 `catch` 吞掉 → 同样恒 false。修复：日志读取统一走新的 `lib/session-events.js`；`arguments` 兼容字符串与对象两种形状，畸形值跳过而非抛出。
+- **会话事件日志裸读 `.events` 导致四处功能静默失效（与 #90 同源）**：`lib/notify.js` 的 `resolveSessionImage` / `querySessionImages`（输入框图片转发、`de_session_images` 整体不可用）、`lib/session-orch.js` 的 `#lastActiveAt`（`de_session list/status` 的最后活动时间恒 null）、`lib/coi/attachments.js` 的 `findImageRef`（COI 任务携带的会话图片解析不到）全部改成 `readSessionLog()`。新增的 `lib/session-events.js` **零依赖**（`store.js` 与 `sync/*` 互相引用密集，helper 反向依赖会引入循环 import），取值顺序 `snapshotEvents()` → `ownEvents()` → 遗留 `.events`，并且**读不到时返回 `undefined` 而不是 `[]`**——调用方需要区分"会话不在本进程 / 日志不可读"与"日志为空"，这两条在 `notify.js` 里是**两条不同的回执**。（`eventAt`/`snapshotEvents`/`ownEvents` 在 0.2.0-rc.2 已被标记废弃但明确"现有逻辑可以暂不迁移"，故这里按兼容兜底使用，未迁移到新的 projection API——那超出本次兼容修复的范围。）
+- **DSH 桌面版：同源守卫拒绝宿主转发，更新按钮恒 400、advisor 写接口恒 403（PR #91）**：桌面端宿主把 Web UI 请求转发到插件路由时**不带 `Origin` 头**，而 `lib/api.js` 与 `lib/advisor/api.js` 的两份同源守卫在 `origin === ''` 时一律拒绝。新增零依赖的 `lib/origin-guard.js` 供两处共用：`Origin` **存在**时语义完全不变（仍必须与 `Host` 同源）；`Origin` **缺失**时只信任**回环对端**（`req.socket.remoteAddress`，兜底 `req.connection`；无 socket 信息时看 `Host` 是否回环主机；连 `Host` 都没有的进程内合成请求放行），非回环一律拒绝。CSRF 面没有扩大：浏览器跨站请求**必带** `Origin`（该分支不放宽），写接口又强制 `Content-Type: application/json` 会触发预检，而插件从不回应 `OPTIONS`。
+- **「检查更新」随机报「远端检测失败（error）」（PR #91 后半）**：远端检测跑 `git ls-remote --tags origin` 却沿用为**本地** git 命令准备的 `CHECK_TIMEOUT_MS = 8000`；实测该命令常态 8–17s，超时被杀后归类成 `error` 写进 `update-state.json`，表现为间歇性失败。新增导出常量 `REMOTE_TIMEOUT_MS = 30_000`（与 `lib/sync/repo.js` 的 `NETWORK_TIMEOUT_MS` 对齐）专供 ls-remote；`CHECK_TIMEOUT_MS` 注释收窄为"本地命令"；`LOCK_STALE_MS` 的最坏时长注释按新预算重算。
+- **技能管理面板只剩 1 个技能（PR #65，0.1.7 起的破坏性改名）**：DSH 0.1.7 删除了 `agentPresets.standingKeyFor()`，改为**租约式**的 `acquireScope(id?) → { key, [Symbol.asyncDispose] }`（契约是"读取期间持有"，长期持有会钉住过时的 preset 修订）。旧实现既调不到该方法（静默回退 `undefined`），又把结果塞进 `scopeCache` 长期缓存。现改为 `withScope(read)`：`acquireScope` 可用时**现场取租约 → 读取 → finally 释放**（释放形态兼容 `Symbol.asyncDispose` 与 `dispose`；释放失败被吞掉，以免覆盖真实结果/异常）；不可用时退回原 `standingKeyFor` + 缓存路径，老宿主行为不变。8 处目录/列表查询全部改走 `withScope`。
+- **构建产物不可复现（Windows 检出必产生 2194 行假 diff）**：`text` loader 把 CSS 按**原文**内联进字符串，于是检出行尾直接决定产物内容——上游产物在 LF 检出下构建（字符串里是 `\n`），而 Windows 上 `core.autocrlf=true` 会把工作区 CSS 变成 CRLF，同样的源码重建出一份内容等价、却与仓库历史产物**逐行不同**的 bundle，让"产物是否滞后于源码"这类审查彻底失效。`scripts/build.mjs` 新增 `css-lf-normalize` 插件，在 `onLoad` 阶段把 `\r\n` 折成 `\n`：现在无论 LF 还是 CRLF 工作区，重建结果都与仓库内 `lib/client.js` **逐字节一致**（已验证）。
+
+### 测试
+
+- 新增 `tests/session-events.test.js`（10 例）：三路优先级、老的 `.events` 兜底、只暴露 `snapshotEvents()` 的 rc.2 真身形状，以及**读不到必须返回 `undefined` 而不是 `[]`**、取值器抛错降级而不是外抛。
+- 新增 `tests/skills-read-guard.test.js`（7 例）：`hasReadSkill` 在 `arguments` 为 JSON **字符串**与**对象**两种形状下都判为已读（缺陷 b）、只暴露 `snapshotEvents()` 的会话也可判定（缺陷 a）、读别的技能/动作/工具不算、日志不可读不抛错、畸形 `arguments` 只跳过。
+- 新增 `tests/api-origin-guard.test.js`（12 例）：`isLoopbackAddress` / `isLoopbackHost` 的边界（`127.x`、`::1`、`::ffff:127.x`、`localhost:port`、`[::1]:port`）；`allowAbsentOrigin` 的四档判定；`lib/api.js` 更新端点与 advisor 写端点在"缺 Origin + 回环"下放行、"缺 Origin + 非回环"（伪造 socket）仍拒绝、带跨站 `Origin` 仍拒绝，以及一条**真实 HTTP 回环连接**的端到端复现。
+- 新增 `tests/update-timeout.test.js`：`REMOTE_TIMEOUT_MS === 30_000`、`ls-remote` 实际走该预算而本地命令仍走 8s、超时用尽时如实落 `lastError`。
+- 新增 `tests/client-style-ownership.test.js`（4 例静态护栏）：`src/client` 下**只有** `style-tag.ts` 允许创建 `<style>`；10 个面板样式标记一个不能少（画板走 `STYLE_ATTR` 常量）；归属键必须等于 `package.json` 的 `name`（账本 ownerId）且幂等守卫分支要抢回归属；产物里恰好只有一处 `createElement("style")`。
+- 新增 `tests/client-bookmark-turntail.test.js`（5 例静态护栏）：必须查询 `[data-turn-tail]`、必须按文档顺序解析锚点、**以工具调用收尾的轮也要有星标**（同轮 `assistant-step` 优先 + 任意锚点兜底）、两代宿主路径都在、中间轮接管与"只给轮尾打星"的判据仍在。
+- 更新 `tests/advisor-api.test.js`：原用例断言"写操作缺 Origin → 403"，按 PR #91 的新语义改为**回环放行**（非回环仍拒绝，由 `tests/api-origin-guard.test.js` 直接覆盖）。
+- 既有无回归：`notify.test.js`、`session-orch.test.js`、`coi-attachments.test.js`、`skills.test.js`、`skills-manager.test.js`、`api.test.js`、`update.test.js` 全绿。`advisor-api.test.js` 的「装配：…turn/end 触发评审并 steer」在**未改动的 HEAD 基线**上同样会间歇失败（20ms 等 drain 的时序抖动；基线 3 次跑 2 次红），与本次改动无关。
+
+---
+
 ## 2026-09-28
 
 ### 修复

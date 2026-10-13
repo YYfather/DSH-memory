@@ -1,4 +1,4 @@
-# dsh-memory-evolve — Usage Scenario Guide
+# DSH-memory — Usage Scenario Guide
 
 > **In one sentence**: Give the AI inside DSH long-term cross-session memory, help you manage todos and skills, and let you orchestrate a team of AI sessions and external AI agents working together — **the more you use it, the more it understands you, and switching sessions never loses context**.
 >
@@ -8,14 +8,29 @@
 
 ---
 
+## Attribution
+
+**DSH-memory is a fork of [csyangwen/dsh-memory-evolve](https://github.com/csyangwen/dsh-memory-evolve)**, distributed under the same MIT license (the original copyright notice is preserved in [LICENSE](LICENSE): `Copyright (c) 2026 dsh-external`).
+
+| | |
+|---|---|
+| **Upstream** | [csyangwen/dsh-memory-evolve](https://github.com/csyangwen/dsh-memory-evolve) by [@csyangwen](https://github.com/csyangwen) |
+| **This fork** | [YYfather/DSH-memory](https://github.com/YYfather/DSH-memory) (npm: `@yyfather/dsh-memory`) |
+| **What this fork changes** | **DSH 0.2.0-rc.2 compatibility fixes only — no feature was removed.** See the [changelog for 2026-10-13](docs/CHANGELOG.md). |
+| **Credit** | The layered-memory model, the five tracks, git-backed memory sync and its merge algorithm, self-evolution/skills, COI dispatch and everything else are upstream's original design; this fork only repairs breakage introduced by the host upgrade. |
+
+> This fork is **fully data-compatible with upstream**: the memory directory is still `<DSH_HOME>/memories`, and config keys, tool names, HTTP route prefixes and localStorage keys are unchanged — switching between upstream and this fork loses no memory and needs no reconfiguration.
+
+---
+
 ## Quick Start (Installation)
 
 The plugin ships its own `cordis.patch.yml` (declared via `dsh.bundle.patch`), so after `dsh plugin add` the **host side registers automatically — no manual configuration needed**. Using the web profile as an example, two steps:
 
 ```sh
-# 1. Install into the profile (use link: for a local directory; git/registry
-#    package addresses also work)
-dsh plugin --profile web add github:csyangwen/dsh-memory-evolve
+# 1. Install into the profile (npm package name; a local link: or git address
+#    also works)
+dsh plugin --profile web add @yyfather/dsh-memory
 
 # 2. Restart dsh web — done
 ```

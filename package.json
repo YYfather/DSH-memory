@@ -1,8 +1,7 @@
 {
-  "name": "dsh-memory-evolve",
-  "version": "0.1.0",
-  "description": "为 DeepSeek Harness 带来分层记忆（全局 / 用户 / 项目 / GIT 分支 / 每日）与自我进化（经验沉淀 + 技能自动创建）和技能管理、待办管理、CLI 调度（kimi/codex/grok/hermes 等外部 AI 统一调度）、临时信息便签，带 WebUI 管理界面。Hermes-style long-term memory, self-evolution, skills, todos and external CLI agent dispatch for DeepSeek Harness.",
-  "private": true,
+  "name": "@yyfather/dsh-memory",
+  "version": "0.2.0",
+  "description": "DSH-memory — 为 DeepSeek Harness 带来分层记忆（全局 / 用户 / 项目 / GIT 分支 / 每日）与自我进化（经验沉淀 + 技能自动创建）和技能管理、待办管理、CLI 调度（kimi/codex/grok/hermes 等外部 AI 统一调度）、记忆 git 同步、临时信息便签，带 WebUI 管理界面。基于 csyangwen/dsh-memory-evolve（MIT）的 DSH 0.2.0-rc.2 兼容分支。Layered long-term memory, self-evolution, skills, todos, memory sync and external CLI agent dispatch for DeepSeek Harness. Fork of csyangwen/dsh-memory-evolve, adapted for DSH 0.2.0-rc.2.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -15,6 +14,47 @@
     "build": "node scripts/build.mjs"
   },
   "license": "MIT",
+  "author": "YYfather",
+  "contributors": [
+    {
+      "name": "csyangwen",
+      "url": "https://github.com/csyangwen"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YYfather/DSH-memory.git"
+  },
+  "homepage": "https://github.com/YYfather/DSH-memory#readme",
+  "bugs": {
+    "url": "https://github.com/YYfather/DSH-memory/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "dsh-plugins",
+    "deepseek-harness",
+    "deepseek",
+    "cordis",
+    "cordis-plugin",
+    "memory",
+    "long-term-memory",
+    "agent-memory",
+    "self-evolution",
+    "skills",
+    "todos",
+    "git-sync",
+    "claude-skills"
+  ],
+  "files": [
+    "lib",
+    "src",
+    "scripts",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
   "dsh": {
     "client": {
       "inject": [

@@ -1,4 +1,6 @@
-# dsh-memory-evolve
+# DSH-memory
+
+> **来源声明**：本项目是 [csyangwen/dsh-memory-evolve](https://github.com/csyangwen/dsh-memory-evolve) 的衍生分支（MIT，原始版权声明见 [LICENSE](LICENSE)）。本分支只做 **DSH 0.2.0-rc.2 兼容性修复**，功能与上游一致、数据完全兼容（详见 [更新日志](docs/CHANGELOG.md)）。本分支仓库：[YYfather/DSH-memory](https://github.com/YYfather/DSH-memory)。
 
 为 DeepSeek Harness 带来「跨会话长期记忆 + 后台自我进化」能力的纯插件实现：**五轨记忆 · git 分支感知 · 回合内自我审查 · 技能自我进化与技能管理器 · 四轨待办 · COI 调度 · 会话广播 · 会话编排 · 会话搜索 · 提示词管理器 · 临时信息便签 · 模型设置 · Web UI 设置**——**零核心修改、零运行时依赖**，随装随用、卸载即净。
 
@@ -307,37 +309,37 @@ DSH 会话之间传递消息的轻量子功能，**独立于 COI 调度框架**�
 报 duplicate loader entry id）：
 
 ```sh
-# 安装到 profile（本地目录用 link:，也可用 git/registry 包地址）
-dsh plugin --profile web add link:/path/to/dsh-memory-evolve
+# 安装到 profile（npm 包名；本地目录用 link:，也可用 git 地址）
+dsh plugin --profile web add @yyfather/dsh-memory
 ```
 
 如需修改默认配置（如开启回合内记忆审查），在 profile 的 patch 层做 id 覆盖
 （编辑 `~/.dsh/profiles/web/cordis.patch.yml`）：
 
 ```yaml
-- id: dsh-memory-evolve
+- id: dsh-memory
   config:
     reviewEnabled: true      # 开启回合内记忆审查（默认关）
     reviewInterval: 10       # 每 10 个用户回合审查一次
 ```
 
-重启 `dsh web` 即生效。卸载：`dsh plugin --profile web remove dsh-memory-evolve`，
+重启 `dsh web` 即生效。卸载：`dsh plugin --profile web remove @yyfather/dsh-memory`，
 一切效果随插件卸载自动清理。
 
 ### 旧机制（DSH 08-06 之前，不再推荐）
 
 ```sh
 mkdir -p ~/.dsh/plugins
-cp -r dsh-memory-evolve ~/.dsh/plugins/
-ln -s ~/.dsh/plugins/dsh-memory-evolve ~/node_modules/@dsh-local/dsh-memory-evolve
+cp -r DSH-memory ~/.dsh/plugins/
+ln -s ~/.dsh/plugins/DSH-memory ~/node_modules/@dsh-local/dsh-memory
 ```
 
 在 `~/.dsh/config.yaml` 追加（08-06 起该文件已不再被读取，仅旧版 DSH 适用）：
 
 ```yaml
 - insert:
-    - id: dsh-memory-evolve
-      name: '@dsh-local/dsh-memory-evolve'
+    - id: dsh-memory
+      name: '@dsh-local/dsh-memory'
       config:
         reviewEnabled: true
         reviewInterval: 10
