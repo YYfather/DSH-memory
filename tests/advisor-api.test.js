@@ -351,7 +351,7 @@ test('API：错误路径（BAD_SESSION、同源 403、非法 patch）', async (t
 
   // 写操作缺 Origin + 回环对端 → **放行**（PR #91：DSH 桌面端宿主转发 Web UI
   // 请求时不带 Origin，旧实现一律 403 导致桌面版 advisor 写接口全不可用）。
-  // 非回环对端仍拒绝——该分支由 tests/origin-guard.test.js 直接覆盖。
+  // 非回环对端仍拒绝——该分支由 tests/api-origin-guard.test.js 直接覆盖。
   const noOrigin = await fetch(base + '/memory-evolve/api/advisor/toggle', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
